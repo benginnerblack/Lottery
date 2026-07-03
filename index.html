@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตำราแก้จน · เครื่องสุ่มเลข</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Charmonman:wght@400;700&family=Sarabun:wght@300;400;500;600;700&family=Chonburi&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ecd8;
+    --paper-dark:#e8dcbd;
+    --ink:#2a2118;
+    --maroon:#7a1f2b;
+    --maroon-deep:#5c1620;
+    --gold:#b8912f;
+    --gold-light:#d9b65a;
+    --stamp-red:#a3283a;
+    --line:#c9b98a;
+    --shadow: rgba(42,33,24,0.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at top left, rgba(184,145,47,0.12), transparent 55%),
+      radial-gradient(ellipse at bottom right, rgba(122,31,43,0.10), transparent 55%),
+      var(--paper);
+    font-family:'Sarabun', sans-serif;
+    color:var(--ink);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px 60px;
+  }
+
+  .sheet{
+    width:100%;
+    max-width:560px;
+    background: var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, transparent 1px, transparent 2px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.015) 0px, transparent 1px, transparent 2px);
+    border:1px solid var(--line);
+    border-radius:6px;
+    box-shadow: 0 18px 40px -12px var(--shadow), 0 2px 0 var(--paper-dark) inset;
+    position:relative;
+    overflow:hidden;
+  }
+  .sheet::before{
+    content:"";
+    position:absolute; inset:10px;
+    border:1.5px solid rgba(122,31,43,0.35);
+    border-radius:3px;
+    pointer-events:none;
+  }
+
+  header.title{
+    text-align:center;
+    padding:28px 20px 14px;
+    position:relative;
+  }
+  header.title .eyebrow{
+    font-family:'Sarabun',sans-serif;
+    font-size:12px;
+    letter-spacing:.18em;
+    color:var(--gold);
+    font-weight:600;
+    text-transform:uppercase;
+  }
+  header.title h1{
+    font-family:'Chonburi', cursive;
+    font-size:34px;
+    margin:6px 0 2px;
+    color:var(--maroon-deep);
+    text-shadow: 1px 1px 0 rgba(184,145,47,0.25);
+  }
+  header.title p{
+    margin:0;
+    font-size:13.5px;
+    color:#6b5f4a;
+  }
+
+  .divider{
+    height:1px;
+    margin:0 24px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .day-picker{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    justify-content:center;
+    padding:18px 20px 6px;
+  }
+  .day-btn{
+    font-family:'Sarabun',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:8px 13px;
+    border-radius:20px;
+    border:1.3px solid var(--line);
+    background: rgba(255,255,255,0.35);
+    color:#5c5138;
+    cursor:pointer;
+    transition: all .18s ease;
+    white-space:nowrap;
+  }
+  .day-btn:hover{ border-color:var(--gold); color:var(--maroon-deep); }
+  .day-btn.active{
+    background: var(--maroon-deep);
+    border-color:var(--maroon-deep);
+    color:#f3ead2;
+    box-shadow:0 3px 10px -3px rgba(92,22,32,.6);
+  }
+  .day-btn .dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    margin-right:6px; vertical-align:middle;
+  }
+
+  .stage{
+    padding:22px 24px 8px;
+    text-align:center;
+  }
+
+  .roll-btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    font-family:'Chonburi', cursive;
+    font-size:20px;
+    letter-spacing:.02em;
+    color:#f6ecd2;
+    background: linear-gradient(160deg, var(--stamp-red), var(--maroon-deep));
+    padding:14px 34px;
+    border-radius:10px;
+    box-shadow: 0 10px 22px -8px rgba(92,22,32,.65), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .roll-btn:hover{ transform: translateY(-2px); box-shadow: 0 14px 26px -8px rgba(92,22,32,.7); }
+  .roll-btn:active{ transform: translateY(1px) scale(.98); }
+  .roll-btn:disabled{ opacity:.6; cursor:default; transform:none; }
+
+  .results{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:16px;
+    padding:26px 24px 8px;
+  }
+  .result-card{
+    background: rgba(255,255,255,0.4);
+    border:1.3px solid var(--line);
+    border-radius:10px;
+    padding:16px 10px 18px;
+    position:relative;
+  }
+  .result-card .label{
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:10px;
+  }
+  .digits{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+  }
+  .digit{
+    width:38px; height:48px;
+    border:2px solid var(--maroon-deep);
+    border-radius:8px;
+    background: var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Chonburi', cursive;
+    font-size:24px;
+    color:var(--maroon-deep);
+    box-shadow: inset 0 0 0 3px rgba(184,145,47,0.15);
+    position:relative;
+    overflow:hidden;
+  }
+  .digit.spin{ color:#a99a72; }
+  .stamp-mark{
+    position:absolute; top:6px; right:10px;
+    font-size:10px; color:var(--gold); opacity:.75; letter-spacing:.08em;
+  }
+
+  .grid-preview{
+    margin:4px 24px 20px;
+    border:1.3px solid var(--line);
+    border-radius:8px;
+    background: rgba(255,255,255,0.3);
+    padding:14px;
+  }
+  .grid-preview .gp-title{
+    text-align:center;
+    font-size:12.5px;
+    color:#6b5f4a;
+    margin-bottom:10px;
+    font-weight:600;
+  }
+  table.tamra{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'Chonburi', cursive;
+    color:var(--maroon-deep);
+  }
+  table.tamra td{
+    border:1px solid var(--line);
+    text-align:center;
+    padding:6px 0;
+    font-size:16px;
+    width:33.33%;
+  }
+  table.tamra td.center-cell{
+    position:relative;
+  }
+  table.tamra td.center-cell span{
+    display:inline-block;
+    border:2px solid var(--stamp-red);
+    border-radius:50%;
+    width:26px; height:26px;
+    line-height:22px;
+  }
+  table.tamra td.blank-cell{
+    background: rgba(0,0,0,0.02);
+  }
+
+  .hot-panel{
+    margin:16px 24px 0;
+    border:1.3px dashed var(--gold);
+    border-radius:8px;
+    background: rgba(217,182,90,0.08);
+    padding:12px 14px 14px;
+  }
+  .hot-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:4px;
+  }
+  .hot-title{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--maroon-deep);
+  }
+  .sync-btn{
+    font-family:'Sarabun',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    color:var(--maroon-deep);
+    background: rgba(255,255,255,0.55);
+    border:1px solid var(--gold);
+    border-radius:20px;
+    padding:4px 10px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition: background .15s ease;
+  }
+  .sync-btn:hover{ background: rgba(255,255,255,0.85); }
+  .sync-btn:disabled{ opacity:.6; cursor:default; }
+  .sync-status{
+    font-size:11px;
+    color:#8a7c5c;
+    margin-bottom:9px;
+  }
+  .hot-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .hot-chip{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'Chonburi', cursive;
+    font-size:15px;
+    color:#fff;
+    background: linear-gradient(160deg, var(--stamp-red), var(--maroon-deep));
+    border-radius:8px;
+    padding:5px 10px 5px 12px;
+    box-shadow:0 3px 8px -3px rgba(92,22,32,.5);
+  }
+  .hot-chip.real-boost{
+    background: linear-gradient(160deg, #2f6b46, #1e4a30);
+  }
+  .hot-chip .chip-count{
+    font-family:'Sarabun',sans-serif;
+    font-size:10.5px;
+    font-weight:700;
+    background: rgba(255,255,255,0.22);
+    border-radius:20px;
+    padding:2px 6px;
+  }
+  .hot-empty{
+    font-size:12px;
+    color:#8a7c5c;
+    line-height:1.5;
+  }
+
+  .history{
+    margin:0 24px 8px;
+  }
+  .history-title{
+    font-size:12.5px;
+    font-weight:600;
+    color:#6b5f4a;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .history-title button{
+    border:none; background:none; color:var(--maroon);
+    font-family:'Sarabun',sans-serif; font-size:12px;
+    cursor:pointer; text-decoration:underline;
+    padding:0;
+  }
+  .history-list{
+    display:flex; flex-direction:column; gap:6px;
+    max-height:150px; overflow-y:auto;
+    padding-right:4px;
+  }
+  .history-item{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13px;
+    background: rgba(255,255,255,0.35);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:7px 12px;
+  }
+  .history-item .h-nums{
+    font-family:'Chonburi', cursive;
+    color:var(--maroon-deep);
+    letter-spacing:.03em;
+  }
+  .history-item .h-day{ color:#7a6d50; font-size:11.5px; }
+  .history-item .h-time{ color:#a99a72; font-size:11px; }
+
+  footer.note{
+    text-align:center;
+    font-size:11.5px;
+    color:#8a7c5c;
+    padding:14px 24px 22px;
+    line-height:1.6;
+  }
+
+  ::-webkit-scrollbar{ width:6px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+
+  @media (max-width:420px){
+    header.title h1{ font-size:28px; }
+    .digit{ width:32px; height:42px; font-size:20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    * { transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <header class="title">
+    <div class="eyebrow">ตำรา แก้จน</div>
+    <h1>เครื่องสุ่มเลข</h1>
+    <p>สุ่มเลข 2 ตัว และ 3 ตัว</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="day-picker" id="dayPicker"></div>
+
+  <div class="stage">
+    <button class="roll-btn" id="rollBtn">🔮 หมุนเลข</button>
+  </div>
+
+  <div class="results">
+    <div class="result-card">
+      <div class="label">เลข 2 ตัว</div>
+      <div class="digits" id="digits2">
+        <div class="digit">-</div>
+        <div class="digit">-</div>
+      </div>
+      <div class="stamp-mark">฿</div>
+    </div>
+    <div class="result-card">
+      <div class="label">เลข 3 ตัว</div>
+      <div class="digits" id="digits3">
+        <div class="digit">-</div>
+        <div class="digit">-</div>
+        <div class="digit">-</div>
+      </div>
+      <div class="stamp-mark">฿</div>
+    </div>
+  </div>
+
+  <div class="grid-preview">
+    <div class="gp-title">ตารางประจำวัน — <span id="gpDayName">อาทิตย์</span></div>
+    <table class="tamra" id="tamraTable"></table>
+  </div>
+
+  <div class="hot-panel" id="hotPanel">
+    <div class="hot-title-row">
+      <div class="hot-title">📈 เลขเด่นจากสถิติย้อนหลัง</div>
+      <button class="sync-btn" id="syncBtn" title="ซิงค์ผลหวยจริงล่าสุด">🔄 ซิงค์ผลจริง</button>
+    </div>
+    <div class="sync-status" id="syncStatus">ยังไม่ได้ซิงค์ข้อมูลหวยจริง</div>
+    <div class="hot-chips" id="hotChips"></div>
+    <div class="hot-empty" id="hotEmpty">ยังไม่มีสถิติ — เลขทุกตัวในตารางมีโอกาสออกเท่ากัน</div>
+  </div>
+
+  <div class="history">
+    <div class="history-title">
+      <span>ประวัติการสุ่ม</span>
+      <button id="clearHistory">ล้างประวัติ</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <footer class="note">
+    เลข 2 ตัว/3 ตัวสุ่มจากตัวเลขในตารางของวันนั้น โดยถ่วงน้ำหนักด้วยสถิติการออกจริงของสลากกินแบ่งรัฐบาลย้อนหลัง (ผ่าน lotto.api.rayriffy.com) รวมกับสถิติการสุ่มในเครื่อง<br>
+    ผลสลากแต่ละงวดเป็นเหตุการณ์อิสระทางสถิติ ตัวเลขที่เคยออกบ่อยไม่ได้แปลว่าจะออกอีกในอนาคต — ใช้เพื่อความบันเทิงเท่านั้น ไม่ใช่การพยากรณ์ผลจริง
+  </footer>
+</div>
+
+<script>
+  // Each day's exact 3x3 chart, copied cell-for-cell from the reference
+  // image. `null` = blank cell. Grid is [row][col], 0-based.
+  // The circled cell is always the middle of the middle row.
+  const days = [
+    { name:'อาทิตย์', color:'#c0392b', grid:[[null,1,8],[3,5,2],[null,4,9]] },
+    { name:'จันทร์',  color:'#d9b65a', grid:[[2,9,1],[4,6,5],[null,7,0]] },
+    { name:'อังคาร',  color:'#c56a3a', grid:[[null,3,0],[5,4,7],[null,8,1]] },
+    { name:'พุธ',     color:'#3f7d5c', grid:[[null,4,1],[6,9,8],[null,2,5]] },
+    { name:'พฤหัส',   color:'#8a6bb0', grid:[[null,2,null],[5,0,9],[7,3,6]] },
+    { name:'ศุกร์',    color:'#4f8fc0', grid:[[null,8,6],[4,7,3],[null,7,0]] },
+    { name:'เสาร์',    color:'#5c4a3d', grid:[[null,8,7],[5,2,4],[null,1,6]] },
+  ];
+
+  let activeDay = new Date().getDay();
+  let history = [];
+
+  const dayPicker = document.getElementById('dayPicker');
+  const digits2El = document.getElementById('digits2');
+  const digits3El = document.getElementById('digits3');
+  const rollBtn = document.getElementById('rollBtn');
+  const gpDayName = document.getElementById('gpDayName');
+  const tamraTable = document.getElementById('tamraTable');
+  const historyList = document.getElementById('historyList');
+  const clearHistoryBtn = document.getElementById('clearHistory');
+  const hotChips = document.getElementById('hotChips');
+  const hotEmpty = document.getElementById('hotEmpty');
+  const syncBtn = document.getElementById('syncBtn');
+  const syncStatus = document.getElementById('syncStatus');
+
+  // Real-world Thai lottery history, pulled from a public API that
+  // mirrors the official draw results (เลขท้าย 2 ตัว / เลขท้าย 3 ตัว).
+  // realFreq[digit] = how many times that digit appeared across the
+  // sampled past draws' 2-digit and 3-digit prize numbers.
+  let realFreq = {};
+  let realDrawCount = 0;
+  const LOTTO_API = 'https://lotto.api.rayriffy.com';
+  // Public CORS relay — used only as a fallback if the API doesn't send
+  // CORS headers for direct browser requests (it's built for server-side
+  // use, so this is common).
+  const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+  async function fetchJson(url){
+    // Try a direct request first; if the browser blocks it (no CORS
+    // headers) or it errors, retry once through a CORS relay.
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (directErr) {
+      const res = await fetch(CORS_PROXY + encodeURIComponent(url));
+      if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
+      return await res.json();
+    }
+  }
+
+  async function syncRealLotteryStats(numDraws = 15){
+    syncBtn.disabled = true;
+    syncStatus.textContent = '⏳ กำลังซิงค์ผลหวยจริงย้อนหลัง...';
+    try{
+      const listJson = await fetchJson(`${LOTTO_API}/list/1`);
+      const ids = (listJson.response || []).slice(0, numDraws).map(item => item.id);
+      if (ids.length === 0) throw new Error('empty draw list');
+
+      const draws = await Promise.all(
+        ids.map(id => fetchJson(`${LOTTO_API}/lotto/${id}`).catch(() => null))
+      );
+
+      const freq = {};
+      let ok = 0;
+      draws.forEach(d => {
+        if (!d || d.status !== 'success') return;
+        const rn = d.response.runningNumbers || [];
+        rn.forEach(item => {
+          if (item.id === 'runningNumberBackTwo' || item.id === 'runningNumberBackThree'){
+            (item.number || []).forEach(numStr => {
+              numStr.split('').forEach(ch => {
+                freq[ch] = (freq[ch] || 0) + 1;
+              });
+            });
+          }
+        });
+        ok++;
+      });
+
+      if (ok === 0) throw new Error('no draws parsed');
+
+      realFreq = freq;
+      realDrawCount = ok;
+      const now = new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+      syncStatus.textContent = `✅ ซิงค์แล้ว ${ok} งวดล่าสุด (อัปเดต ${now})`;
+    } catch (err){
+      console.error('sync failed', err);
+      syncStatus.textContent = '⚠️ ซิงค์ไม่สำเร็จ (เครือข่ายหรือ API ขัดข้อง) — ใช้สถิติในเครื่องแทน';
+    } finally {
+      syncBtn.disabled = false;
+      renderHotPanel();
+    }
+  }
+
+  function mergeFreq(a, b){
+    const out = { ...a };
+    Object.keys(b).forEach(k => { out[k] = (out[k] || 0) + b[k]; });
+    return out;
+  }
+
+  function renderDayPicker(){
+    dayPicker.innerHTML = '';
+    days.forEach((d, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'day-btn' + (i === activeDay ? ' active' : '');
+      btn.innerHTML = `<span class="dot" style="background:${d.color}"></span>${d.name}`;
+      btn.addEventListener('click', () => {
+        activeDay = i;
+        renderDayPicker();
+        renderTamraTable();
+        renderHotPanel();
+      });
+      dayPicker.appendChild(btn);
+    });
+    gpDayName.textContent = days[activeDay].name;
+  }
+
+  function renderTamraTable(){
+    // Displays the fixed reference chart for the selected day exactly
+    // as printed in the source table — this grid is a lookup table,
+    // not something to randomize. Only the 2-digit/3-digit results
+    // above are randomized when "หมุนเลข" is pressed.
+    const grid = days[activeDay].grid;
+    tamraTable.innerHTML = '';
+    for (let r = 0; r < 3; r++){
+      const tr = document.createElement('tr');
+      for (let c = 0; c < 3; c++){
+        const td = document.createElement('td');
+        const val = grid[r][c];
+        if (val === null){
+          td.className = 'blank-cell';
+        } else if (r === 1 && c === 1){
+          td.className = 'center-cell';
+          td.innerHTML = `<span>${val}</span>`;
+        } else {
+          td.textContent = val;
+        }
+        tr.appendChild(td);
+      }
+      tamraTable.appendChild(tr);
+    }
+    gpDayName.textContent = days[activeDay].name;
+  }
+
+  function getDayPool(){
+    // Flatten the active day's chart into just its filled-in numbers —
+    // this is the pool we draw random digits from, per the day's table.
+    return days[activeDay].grid.flat().filter(v => v !== null);
+  }
+
+  function getDigitFrequency(dayName){
+    // Counts how often each digit has appeared in this day's past
+    // rolled results (from history), used to weight future draws.
+    const counts = {};
+    history
+      .filter(h => h.day === dayName)
+      .forEach(h => {
+        (h.nums2 + h.nums3).split('').forEach(d => {
+          counts[d] = (counts[d] || 0) + 1;
+        });
+      });
+    return counts;
+  }
+
+  function randDigit(pool, freq){
+    if (!pool || !pool.length) return Math.floor(Math.random() * 10);
+    if (!freq){
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    // Weighted pick: numbers that appeared more often in history get a
+    // bigger slice of the wheel ("เลขเด่น" — trending numbers).
+    const weights = pool.map(v => 1 + (freq[String(v)] || 0));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < pool.length; i++){
+      r -= weights[i];
+      if (r <= 0) return pool[i];
+    }
+    return pool[pool.length - 1];
+  }
+
+  function getCombinedFrequency(){
+    // Blends this day's local roll history with the real, synced Thai
+    // lottery draw history — both count toward which digits are "hot".
+    return mergeFreq(getDigitFrequency(days[activeDay].name), realFreq);
+  }
+
+  function renderHotPanel(){
+    const pool = getDayPool();
+    const localFreq = getDigitFrequency(days[activeDay].name);
+    const combined = getCombinedFrequency();
+    const seen = new Set();
+    const ranked = pool
+      .filter(v => { const k = String(v); if (seen.has(k)) return false; seen.add(k); return true; })
+      .map(v => ({
+        value: v,
+        count: combined[String(v)] || 0,
+        fromReal: (realFreq[String(v)] || 0) > (localFreq[String(v)] || 0)
+      }))
+      .filter(item => item.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    hotChips.innerHTML = '';
+    if (ranked.length === 0){
+      hotChips.style.display = 'none';
+      hotEmpty.style.display = 'block';
+      return;
+    }
+    hotChips.style.display = 'flex';
+    hotEmpty.style.display = 'none';
+    ranked.forEach(item => {
+      const chip = document.createElement('div');
+      chip.className = 'hot-chip' + (item.fromReal ? ' real-boost' : '');
+      chip.innerHTML = `${item.value}<span class="chip-count">×${item.count}</span>`;
+      hotChips.appendChild(chip);
+    });
+  }
+
+  function spinDigits(el, count, finalDigits, pool){
+    return new Promise(resolve => {
+      el.innerHTML = '';
+      const cells = [];
+      for (let i = 0; i < count; i++){
+        const cell = document.createElement('div');
+        cell.className = 'digit spin';
+        cell.textContent = randDigit(pool);
+        el.appendChild(cell);
+        cells.push(cell);
+      }
+      let ticks = 0;
+      const maxTicks = 14;
+      const interval = setInterval(() => {
+        ticks++;
+        cells.forEach((cell, i) => {
+          if (ticks < maxTicks - i * 2){
+            cell.textContent = randDigit(pool);
+          } else {
+            cell.textContent = finalDigits[i];
+            cell.classList.remove('spin');
+          }
+        });
+        if (ticks >= maxTicks){
+          clearInterval(interval);
+          resolve();
+        }
+      }, 60);
+    });
+  }
+
+  function addHistory(nums2, nums3){
+    const now = new Date();
+    const time = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+    history.unshift({ day: days[activeDay].name, nums2, nums3, time });
+    history = history.slice(0, 12);
+    renderHistory();
+  }
+
+  function renderHistory(){
+    historyList.innerHTML = '';
+    if (history.length === 0){
+      historyList.innerHTML = '<div style="text-align:center;color:#a99a72;font-size:12.5px;padding:8px 0;">ยังไม่มีประวัติ</div>';
+      return;
+    }
+    history.forEach(h => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <span class="h-nums">${h.nums2} · ${h.nums3}</span>
+        <span class="h-day">${h.day}</span>
+        <span class="h-time">${h.time}</span>
+      `;
+      historyList.appendChild(item);
+    });
+  }
+
+  rollBtn.addEventListener('click', async () => {
+    rollBtn.disabled = true;
+    rollBtn.textContent = '⏳ กำลังสุ่ม...';
+
+    const pool = getDayPool();
+    const freq = getCombinedFrequency();
+    const final2 = [randDigit(pool, freq), randDigit(pool, freq)];
+    const final3 = [randDigit(pool, freq), randDigit(pool, freq), randDigit(pool, freq)];
+
+    await Promise.all([
+      spinDigits(digits2El, 2, final2, pool),
+      spinDigits(digits3El, 3, final3, pool)
+    ]);
+
+    addHistory(final2.join(''), final3.join(''));
+    renderHotPanel();
+
+    rollBtn.disabled = false;
+    rollBtn.textContent = '🔮 หมุนเลข';
+  });
+
+  clearHistoryBtn.addEventListener('click', () => {
+    history = [];
+    renderHistory();
+    renderHotPanel();
+  });
+
+  syncBtn.addEventListener('click', () => syncRealLotteryStats());
+
+  renderDayPicker();
+  renderTamraTable();
+  renderHistory();
+  renderHotPanel();
+  syncRealLotteryStats();
+</script>
+
+</body>
+</html>
